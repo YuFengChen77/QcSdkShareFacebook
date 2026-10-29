@@ -49,9 +49,20 @@ import QcSdkShareFacebook
 precondition(NSClassFromString("QcSdkShareFacebook.QcSdkShareFacebook") != nil)
 ```
 
-`-ObjC` 缺失可能使只通过类名访问的实现被裁掉。不要直接创建内部 Provider 代替 SDK 的公开业务入口；通过编译和反射检查后，仍需配置渠道并联调对应功能。
+`-ObjC` 缺失可能使只通过类名访问的实现被裁掉。业务通过 SDK 公开入口调用，不直接依赖内部实现类；通过编译和反射检查后，仍需完成本模块配置及业务联调。
 
 ## Facebook 分享配置与调用
+
+在已有启动转发和 SDK 初始化流程完成后，使用公开分享入口：
+
+```swift
+@MainActor
+func shareFacebookImage(_ param: ShareParam, listener: ShareListener?) {
+    QcShareSdkApi.shared.share(platform: .facebook, shareParam: param, listener: listener)
+}
+```
+
+`param` 必须提供当前实现支持的图片内容，不能传文本或网页类型。
 
 本模块自动依赖 Core、基础分享模块和官方 Facebook Core / Share 产品，无需手动再添加 Facebook SPM 包。它提供分享能力，不会自动提供 Facebook 登录。
 
@@ -95,7 +106,7 @@ Xcode 左侧未显示 XCFramework 不代表下载失败，文件通常位于工�
 ## 注意事项
 
 - 自有 SDK 为静态链接，不重复同时集成手动 Framework 和 SPM 产品，不手工将自有静态 Framework 设置为 Embed & Sign。第三方若含动态依赖，由最终 App 正常嵌入和签名。
-- 包解析与反射检查不等于真实账号授权、分享、上报或 Unity 业务已验证；按本模块配置执行真机 / 宿主联调。
+- 包解析与反射检查不代表业务验收完成；仍需验证Facebook 原生图片分享、取消及完成回调。
 - SDK 的资源和公开 `.swiftinterface` / Objective-C 头文件可以查看，但不包含业务实现源码。
 - 不将 Client Secret、服务端密钥、授权 token 或内部日志提交到公开仓库。
 - Core 通用集成和业务配置另见 [QcSdkCore README](https://github.com/YuFengChen77/QcSdkCore#readme)。
